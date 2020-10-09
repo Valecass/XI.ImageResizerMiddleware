@@ -124,11 +124,11 @@ namespace XI.ImageResizer
                 return SKData.CreateCopy(imageBytes);
             }
 
-            SKCodecOrigin origin; // this represents the EXIF orientation
+            SKEncodedOrigin origin; // this represents the EXIF orientation
             var bitmap = LoadBitmap(File.OpenRead(imagePath), out origin); // always load as 32bit (to overcome issues with indexed color)
 
             // if autorotate = true, and origin isn't correct for the rotation, rotate it
-            if (resizeParams.autorotate && origin != SKCodecOrigin.TopLeft)
+            if (resizeParams.autorotate && origin != SKEncodedOrigin.TopLeft)
                 bitmap = RotateAndFlip(bitmap, origin);
 
             // if either w or h is 0, set it based on ratio of original image
@@ -159,7 +159,7 @@ namespace XI.ImageResizer
 
             // resize
             var resizedImageInfo = new SKImageInfo(resizeParams.w, resizeParams.h, SKImageInfo.PlatformColorType, bitmap.AlphaType);
-            var resizedBitmap = bitmap.Resize(resizedImageInfo, SKBitmapResizeMethod.Lanczos3);
+            var resizedBitmap = bitmap.Resize(resizedImageInfo, SKFilterQuality.High);
 
             // optionally pad
             if (resizeParams.mode == "pad")
@@ -181,15 +181,15 @@ namespace XI.ImageResizer
             return imageData;
         }
 
-        private SKBitmap RotateAndFlip(SKBitmap original, SKCodecOrigin origin)
+        private SKBitmap RotateAndFlip(SKBitmap original, SKEncodedOrigin origin)
         {
             // these are the origins that represent a 90 degree turn in some fashion
-            var differentOrientations = new SKCodecOrigin[]
+            var differentOrientations = new SKEncodedOrigin[]
             {
-                SKCodecOrigin.LeftBottom,
-                SKCodecOrigin.LeftTop,
-                SKCodecOrigin.RightBottom,
-                SKCodecOrigin.RightTop
+                SKEncodedOrigin.LeftBottom,
+                SKEncodedOrigin.LeftTop,
+                SKEncodedOrigin.RightBottom,
+                SKEncodedOrigin.RightTop
             };
 
             // check if we need to turn the image
@@ -204,21 +204,21 @@ namespace XI.ImageResizer
             // todo: the stuff in this switch statement should be rewritten to use pointers
             switch (origin)
             {
-                case SKCodecOrigin.LeftBottom:
+                case SKEncodedOrigin.LeftBottom:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
                             bitmap.SetPixel(y, original.Width - 1 - x, original.GetPixel(x, y));
                     break;
 
-                case SKCodecOrigin.RightTop:
+                case SKEncodedOrigin.RightTop:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
                             bitmap.SetPixel(original.Height - 1 - y, x, original.GetPixel(x, y));
                     break;
 
-                case SKCodecOrigin.RightBottom:
+                case SKEncodedOrigin.RightBottom:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
@@ -226,28 +226,28 @@ namespace XI.ImageResizer
 
                     break;
 
-                case SKCodecOrigin.LeftTop:
+                case SKEncodedOrigin.LeftTop:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
                             bitmap.SetPixel(y, x, original.GetPixel(x, y));
                     break;
 
-                case SKCodecOrigin.BottomLeft:
+                case SKEncodedOrigin.BottomLeft:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
                             bitmap.SetPixel(x, original.Height - 1 - y, original.GetPixel(x, y));
                     break;
 
-                case SKCodecOrigin.BottomRight:
+                case SKEncodedOrigin.BottomRight:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
                             bitmap.SetPixel(original.Width - 1 - x, original.Height - 1 - y, original.GetPixel(x, y));
                     break;
 
-                case SKCodecOrigin.TopRight:
+                case SKEncodedOrigin.TopRight:
 
                     for (var x = 0; x < original.Width; x++)
                         for (var y = 0; y < original.Height; y++)
@@ -263,13 +263,13 @@ namespace XI.ImageResizer
 
         }
 
-        private SKBitmap LoadBitmap(Stream stream, out SKCodecOrigin origin)
+        private SKBitmap LoadBitmap(Stream stream, out SKEncodedOrigin origin)
         {
             using (var s = new SKManagedStream(stream))
             {
                 using (var codec = SKCodec.Create(s))
                 {
-                    origin = codec.Origin;
+                    origin = codec.EncodedOrigin;
                     var info = codec.Info;
                     var bitmap = new SKBitmap(info.Width, info.Height, SKImageInfo.PlatformColorType, info.IsOpaque ? SKAlphaType.Opaque : SKAlphaType.Premul);
 
